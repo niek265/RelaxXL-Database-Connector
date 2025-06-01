@@ -71,6 +71,13 @@ class Connection:
         )
         self.conn.commit()
 
+    def add_research_group_to_patient(self, patient_id: str, group_1: bool, group_2: bool, group_3: bool):
+        self.cursor.execute(
+            "UPDATE patient SET group_1 = %s, group_2 = %s, group_3 = %s WHERE id = %s",
+            (group_1, group_2, group_3, patient_id),
+        )
+        self.conn.commit()
+
     def drop_all_rows(self, table: TABLES):
         self.cursor.execute(f"DELETE FROM {table}")
         self.conn.commit()

@@ -59,6 +59,26 @@ def main():
             print(f"Warning: Failed to parse datetime for row with UserKey {user_key}.")
             continue
 
+        # Check if the end date is after the start date
+        if start_dt and end_dt and start_dt > end_dt:
+            print(
+                f"Warning: Start date {start_dt} is after end date {end_dt} for UserKey {user_key}. Skipping row.")
+            continue
+
+        # Check is the session is longer than 2 hours
+        if start_dt and end_dt and (end_dt - start_dt).total_seconds() > 7200:
+            print(f"Warning: Session duration exceeds 2 hours for UserKey {user_key}. Skipping row.")
+            continue
+
+        # Check if the start date is before 2022-07-04
+        if start_dt and start_dt < datetime(2022, 7, 4):
+            print(f"Warning: Start date {start_dt} is before 2022-07-04 for UserKey {user_key}. Skipping row.")
+            continue
+
+        if not start_dt or not end_dt:
+            print(f"Warning: Failed to parse datetime for row with UserKey {user_key}.")
+            continue
+
         # Parse the questions
         start_question_1 = row["StartQuestion1"]
         end_question_1 = row["EndQuestion1"]
@@ -66,7 +86,7 @@ def main():
         end_question_2 = row["EndQuestion2"]
         modifier = row["IsSleepSession"]
 
-        conn.insert_relax_session(patient_id, start_dt, end_dt, start_question_1, end_question_1, start_question_2, end_question_2, modifier)
+        conn.insert_relax_session(patient_id, start_dt, end_dt, start_question_2, end_question_2, start_question_1, end_question_1, modifier)
     print("Relaxation sessions loaded.\n")
 
     # Define potential datetime formats encountered in the CSV.
@@ -91,6 +111,22 @@ def main():
 
         start_dt = parse_datetime(row["oo_ss"])
         end_dt = parse_datetime(row["oo_es"])
+
+        # Check if the end date is after the start date
+        if start_dt and end_dt and start_dt > end_dt:
+            print(f"Warning: Start date {start_dt} is after end date {end_dt} for UserKey {user_key}. Skipping row.")
+            continue
+
+        # Check is the session is longer than 2 hours
+        if start_dt and end_dt and (end_dt - start_dt).total_seconds() > 7200:
+            print(f"Warning: Session duration exceeds 2 hours for UserKey {user_key}. Skipping row.")
+            continue
+
+        # Check if the start date is before 2022-07-04
+        if start_dt and start_dt < datetime(2022, 7, 4):
+            print(f"Warning: Start date {start_dt} is before 2022-07-04 for UserKey {user_key}. Skipping row.")
+            continue
+
         if not start_dt or not end_dt:
             print(f"Warning: Failed to parse datetime for row with UserKey {user_key}.")
             continue
