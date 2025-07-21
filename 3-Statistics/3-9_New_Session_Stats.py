@@ -584,14 +584,18 @@ def calculate_stats_for_relax_session(relax_session):
                     # Print in bright green that the IBI data is within 5 seconds of the before, start, end and after relaxation session
                     print(f"\033[92mIBI data for {measure_id} is within 5 seconds of the before, start, end and after relaxation session.\033[0m")
                     # Get the IBI data for the before, during and after relaxation session
-                    ibi_data_before = nk.hrv(
-                        nk.intervals_to_peaks(ibi_sequence[closest_index_before:closest_index_start],
-                                              time_sequence[closest_index_before:closest_index_start]))
+                    ibi_data_before = nk.hrv(nk.intervals_to_peaks(ibi_sequence[closest_index_before:closest_index_start],
+                                              time_sequence[closest_index_before:closest_index_start],
+                                              sampling_rate=64),
+                                             sampling_rate=64)
                     ibi_data_during = nk.hrv(nk.intervals_to_peaks(ibi_sequence[closest_index_start:closest_index_end],
-                                                                   time_sequence[
-                                                                   closest_index_start:closest_index_end]))
+                                                                   time_sequence[closest_index_start:closest_index_end],
+                                                                   sampling_rate=64),
+                                             sampling_rate=64)
                     ibi_data_after = nk.hrv(nk.intervals_to_peaks(ibi_sequence[closest_index_end:closest_index_after],
-                                                                  time_sequence[closest_index_end:closest_index_after]))
+                                                                  time_sequence[closest_index_end:closest_index_after],
+                                                                  sampling_rate=64),
+                                            sampling_rate=64)
 
                     # Change the names in the dataframe to add before, during and after
                     ibi_data_before = ibi_data_before.rename(columns=lambda x: f"{x}_before")

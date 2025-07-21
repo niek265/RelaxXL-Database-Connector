@@ -154,7 +154,7 @@ def calculate_ibi_stats(ibi_data: List[float],
         DataFrame containing the calculated IBI statistics.
     """
     # Calculate HRV from IBI data
-    hrv_data = nk.hrv(nk.intervals_to_peaks(ibi_data, time_data))
+    hrv_data = nk.hrv(nk.intervals_to_peaks(ibi_data, time_data, sampling_rate=64), sampling_rate=64)
 
     return hrv_data
 
@@ -544,6 +544,7 @@ def filter_5min_of_e4_before_and_after_relax_sessions(e4_timestamps, relax_times
     filtered_sessions = {}
     for session_id, (start, end) in e4_timestamps.items():
         for relax_id, (relax_start, relax_end) in relax_timestamps.items():
+            print(f"\033[93mChecking session {session_id} for relax session {relax_id}\033[0m")
             if start <= relax_start - timedelta(minutes=5) and end >= relax_end + timedelta(minutes=5):
                 sample_rate = conn.get_sample_rate_from_measurement_session_id(session_id.split("_")[-1])
                 start_index = int((relax_start - start).total_seconds() * sample_rate)
@@ -582,14 +583,22 @@ def filter_5min_of_e4_before_and_after_relax_sessions(e4_timestamps, relax_times
                         continue
                     else:
                         if relax_id not in filtered_sessions:
+                            print(f"\033[92mSession {session_id} has valid data within 5 min before and after the relaxation session {relax_id}.\033[0m")
                             filtered_sessions[relax_id] = [{session_id: (start, end)}]
                         else:
+                            print(f"\033[92mSession {session_id} has valid data within 5 min before and after the relaxation session {relax_id}.\033[0m")
                             filtered_sessions[relax_id].append({session_id: (start, end)})
                 else:
                     if relax_id not in filtered_sessions:
+                        print(f"\033[92mSession {session_id} has valid data within 5 min before and after the relaxation session {relax_id}.\033[0m")
                         filtered_sessions[relax_id] = [{session_id: (start, end)}]
                     else:
+                        print(f"\033[92mSession {session_id} has valid data within 5 min before and after the relaxation session {relax_id}.\033[0m")
                         filtered_sessions[relax_id].append({session_id: (start, end)})
+            else:
+                print(f"\033[91mSession {session_id} does not have 5 minutes before and after the relaxation session {relax_id}. Skipping...\033[0m")
+                if relax_id.split('_')[-1] == '25659' and session_id.split('_')[-1] == '3080':
+                    print(f"\033[91mRelax session {relax_id} has no valid data. Skipping...\033[0m")
 
     # Remove relax sessions that have fewer than 7 valid measurement sessions
     filtered_sessions = {relax_id: sessions for relax_id, sessions in filtered_sessions.items() if len(sessions) >= 7}
@@ -637,6 +646,7 @@ def main():
 
     for patient_id in patient_ids:
         patient_id = patient_id[0]
+        patient_id = "H014"
         e4_timestamps = conn.get_all_timestamps_from_patient_id(patient_id)
         relax_timestamps = conn.get_all_relax_sessions_from_patient_id(patient_id)
 
