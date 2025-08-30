@@ -15,7 +15,23 @@ RelaxXL Database Connector is a Python-based toolkit for managing, analyzing, an
 
 ### Prerequisites
 - Python 3.8+
+- RelaxXL PostgreSQL database
 - Recommended: Create a virtual environment
+
+### Database Setup from dump
+1. Install PostgreSQL version 17.
+
+[!IMPORTANT]
+Ensure you have added PostgreSQL's `bin` directory to your system's PATH.
+
+2. Create a new database:
+   ```bash
+   createdb relaxxl
+   ```
+3. Restore the database from the provided dump file:
+   ```bash
+    pg_restore -U your_username -d relaxxl -Fd -j 4 --verbose "path/to/dump/folder"
+    ```
 
 ### Installation
 1. Clone the repository:
@@ -26,6 +42,15 @@ RelaxXL Database Connector is a Python-based toolkit for managing, analyzing, an
 2. Install required Python packages:
    ```bash
    pip install -r requirements.txt
+   ```
+   
+3. Create an `.env` file in the root directory of the project with your database connection details:
+   ```
+   DB_NAME=relaxxl
+   DB_USER=your_username
+   DB_PASSWORD=your_password
+   DB_HOST=localhost
+   DB_PORT=5432
    ```
 
 ### Usage
@@ -43,5 +68,7 @@ To generate coverage plots:
 ```bash
 python 0-EDA/0-1_Coverage_plot.py
 ```
+
+
 
 
