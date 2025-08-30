@@ -21,8 +21,8 @@ RelaxXL Database Connector is a Python-based toolkit for managing, analyzing, an
 ### Database Setup from dump
 1. Install PostgreSQL version 17.
 
-[!IMPORTANT]
-Ensure you have added PostgreSQL's `bin` directory to your system's PATH.
+> [!IMPORTANT]
+> Ensure you have added PostgreSQL's `bin` directory to your system's PATH.
 
 2. Create a new database:
    ```bash
