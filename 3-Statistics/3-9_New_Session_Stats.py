@@ -215,20 +215,23 @@ def calculate_stats_for_relax_session(relax_session):
                 cursor.execute("SELECT data[%s:%s] FROM measure_session WHERE id = %s", (minus_5_mins, start_of_relax, measure_id.split("_")[-1]))
                 eda_data_before = cursor.fetchone()[0]
 
-                # Calculate stats
-                eda_sd_before = np.std(eda_data_before)
-                eda_mean_before = np.mean(eda_data_before)
-                eda_median_before = np.median(eda_data_before)
-                eda_min_before = np.min(eda_data_before)
-                eda_max_before = np.max(eda_data_before)
-                eda_range_before = eda_max_before - eda_min_before
-                eda_1q_before = np.percentile(eda_data_before, 25)
-                eda_3q_before = np.percentile(eda_data_before, 75)
-                eda_iqr_before = eda_3q_before - eda_1q_before
-
                 nk_data_before = np.array(eda_data_before).ravel()
 
-                signals, info = nk.eda_process(nk_data_before, sampling_rate=4)
+                new_eda_data_before = nk.eda_clean(nk_data_before, sampling_rate=8, method="neurokit")
+
+                # Calculate stats
+                eda_sd_before = np.std(new_eda_data_before)
+                eda_mean_before = np.mean(new_eda_data_before)
+                eda_median_before = np.median(new_eda_data_before)
+                eda_min_before = np.min(new_eda_data_before)
+                eda_max_before = np.max(new_eda_data_before)
+                eda_range_before = eda_max_before - eda_min_before
+                eda_1q_before = np.percentile(new_eda_data_before, 25)
+                eda_3q_before = np.percentile(new_eda_data_before, 75)
+                eda_iqr_before = eda_3q_before - eda_1q_before
+
+
+                signals, info = nk.eda_process(new_eda_data_before, sampling_rate=8)
 
                 scl = signals["EDA_Tonic"]
                 eda_scl_sd_before = np.std(scl)
@@ -261,20 +264,24 @@ def calculate_stats_for_relax_session(relax_session):
                 cursor.execute("SELECT data[%s:%s] FROM measure_session WHERE id = %s", (start_of_relax, end_of_relax, measure_id.split("_")[-1]))
                 eda_data_during = cursor.fetchone()[0]
 
-                # Calculate stats
-                eda_sd_during = np.std(eda_data_during)
-                eda_mean_during = np.mean(eda_data_during)
-                eda_median_during = np.median(eda_data_during)
-                eda_min_during = np.min(eda_data_during)
-                eda_max_during = np.max(eda_data_during)
-                eda_range_during = eda_max_during - eda_min_during
-                eda_1q_during = np.percentile(eda_data_during, 25)
-                eda_3q_during = np.percentile(eda_data_during, 75)
-                eda_iqr_during = eda_3q_during - eda_1q_during
 
                 nk_data_during = np.array(eda_data_during).ravel()
 
-                signals, info = nk.eda_process(nk_data_during, sampling_rate=4)
+                new_eda_data_during = nk.eda_clean(nk_data_during, sampling_rate=8, method="neurokit")
+
+                # Calculate stats
+                eda_sd_during = np.std(new_eda_data_during)
+                eda_mean_during = np.mean(new_eda_data_during)
+                eda_median_during = np.median(new_eda_data_during)
+                eda_min_during = np.min(new_eda_data_during)
+                eda_max_during = np.max(new_eda_data_during)
+                eda_range_during = eda_max_during - eda_min_during
+                eda_1q_during = np.percentile(new_eda_data_during, 25)
+                eda_3q_during = np.percentile(new_eda_data_during, 75)
+                eda_iqr_during = eda_3q_during - eda_1q_during
+
+
+                signals, info = nk.eda_process(new_eda_data_during, sampling_rate=8)
 
                 scl = signals["EDA_Tonic"]
                 eda_scl_sd_during = np.std(scl)
@@ -308,20 +315,22 @@ def calculate_stats_for_relax_session(relax_session):
                 cursor.execute("SELECT data[%s:%s] FROM measure_session WHERE id = %s", (end_of_relax, plus_5_mins, measure_id.split("_")[-1]))
                 eda_data_after = cursor.fetchone()[0]
 
-                # Calculate stats
-                eda_sd_after = np.std(eda_data_after)
-                eda_mean_after = np.mean(eda_data_after)
-                eda_median_after = np.median(eda_data_after)
-                eda_min_after = np.min(eda_data_after)
-                eda_max_after = np.max(eda_data_after)
-                eda_range_after = eda_max_after - eda_min_after
-                eda_1q_after = np.percentile(eda_data_after, 25)
-                eda_3q_after = np.percentile(eda_data_after, 75)
-                eda_iqr_after = eda_3q_after - eda_1q_after
-
                 nk_data_after = np.array(eda_data_after).ravel()
 
-                signals, info = nk.eda_process(nk_data_after, sampling_rate=4)
+                new_eda_data_after = nk.eda_clean(nk_data_after, sampling_rate=8, method="neurokit")
+
+                # Calculate stats
+                eda_sd_after = np.std(new_eda_data_after)
+                eda_mean_after = np.mean(new_eda_data_after)
+                eda_median_after = np.median(new_eda_data_after)
+                eda_min_after = np.min(new_eda_data_after)
+                eda_max_after = np.max(new_eda_data_after)
+                eda_range_after = eda_max_after - eda_min_after
+                eda_1q_after = np.percentile(new_eda_data_after, 25)
+                eda_3q_after = np.percentile(new_eda_data_after, 75)
+                eda_iqr_after = eda_3q_after - eda_1q_after
+
+                signals, info = nk.eda_process(new_eda_data_after, sampling_rate=8)
 
                 scl = signals["EDA_Tonic"]
                 eda_scl_sd_after = np.std(scl)
@@ -584,17 +593,20 @@ def calculate_stats_for_relax_session(relax_session):
                     # Print in bright green that the IBI data is within 5 seconds of the before, start, end and after relaxation session
                     print(f"\033[92mIBI data for {measure_id} is within 5 seconds of the before, start, end and after relaxation session.\033[0m")
                     # Get the IBI data for the before, during and after relaxation session
-                    ibi_data_before = nk.hrv(nk.intervals_to_peaks(ibi_sequence[closest_index_before:closest_index_start],
+                    before = nk.intervals_to_peaks(ibi_sequence[closest_index_before:closest_index_start],
                                               time_sequence[closest_index_before:closest_index_start],
-                                              sampling_rate=64),
+                                              sampling_rate=64)
+                    ibi_data_before = nk.hrv(before,
                                              sampling_rate=64)
-                    ibi_data_during = nk.hrv(nk.intervals_to_peaks(ibi_sequence[closest_index_start:closest_index_end],
+                    during = nk.intervals_to_peaks(ibi_sequence[closest_index_start:closest_index_end],
                                                                    time_sequence[closest_index_start:closest_index_end],
-                                                                   sampling_rate=64),
+                                                                   sampling_rate=64)
+                    ibi_data_during = nk.hrv(during,
                                              sampling_rate=64)
-                    ibi_data_after = nk.hrv(nk.intervals_to_peaks(ibi_sequence[closest_index_end:closest_index_after],
+                    after = nk.intervals_to_peaks(ibi_sequence[closest_index_end:closest_index_after],
                                                                   time_sequence[closest_index_end:closest_index_after],
-                                                                  sampling_rate=64),
+                                                                  sampling_rate=64)
+                    ibi_data_after = nk.hrv(after,
                                             sampling_rate=64)
 
                     # Change the names in the dataframe to add before, during and after

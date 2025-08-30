@@ -127,8 +127,12 @@ def calculate_eda_stats(data: List[float]) -> pd.DataFrame:
     # Ensure data is a 1D array
     data = np.array(data).ravel()
 
+    # If the array only contains zeros, return empty statistics
+    if np.all(data == 0):
+        return eda_stats
+
     # Process EDA data using NeuroKit2
-    signals, info = nk.eda_process(data, sampling_rate=4)
+    signals, info = nk.eda_process(data, sampling_rate=8, method='neurokit')
 
     # Calculate statistics for EDA tonic component
     eda_scl_stats = calculate_regular_stats(signals['EDA_Tonic'], "EDA_scl")
@@ -511,22 +515,23 @@ def get_minute_data(session_data: SessionData) -> Dict[str, MinuteData]:
                                                                       slic,
                                                                       hr_slices[hr_slice_index][index + 1]) if session_data.hr else None,
                 bvp_data=conn.get_data_from_measure_session_with_index(session_data.bvp.session_id,
-                                                                       slic,
+                                                                       bvp_slices[hr_slice_index][index],
                                                                        bvp_slices[hr_slice_index][index + 1]) if session_data.bvp else None,
                 temp_data=conn.get_data_from_measure_session_with_index(session_data.temp.session_id,
-                                                                        slic,
+                                                                        temp_slices[hr_slice_index][index],
                                                                         temp_slices[hr_slice_index][index + 1]) if session_data.temp else None,
                 acc_x_data=conn.get_data_from_measure_session_with_index(session_data.acc_x.session_id,
-                                                                         slic,
+                                                                         acc_x_slices[hr_slice_index][index],
                                                                          acc_x_slices[hr_slice_index][index + 1]) if session_data.acc_x else None,
                 acc_y_data=conn.get_data_from_measure_session_with_index(session_data.acc_y.session_id,
-                                                                         slic,
+                                                                         acc_y_slices[hr_slice_index][index],
                                                                          acc_y_slices[hr_slice_index][index + 1]) if session_data.acc_y else None,
                 acc_z_data=conn.get_data_from_measure_session_with_index(session_data.acc_z.session_id,
-                                                                         slic,
+                                                                         acc_z_slices[hr_slice_index][index],
                                                                          acc_z_slices[hr_slice_index][index + 1]) if session_data.acc_z else None,
                 eda_data=conn.get_data_from_measure_session_with_index(session_data.eda.session_id,
-                                                                       slic, eda_slices[hr_slice_index][index + 1]) if session_data.eda else None
+                                                                       eda_slices[hr_slice_index][index],
+                                                                       eda_slices[hr_slice_index][index + 1]) if session_data.eda else None
             )
             if session_data.ibi and ibi_slices:
                 ibi = conn.get_data_from_measure_session_with_index(session_data.ibi.session_id, ibi_slices[0][index],
@@ -642,11 +647,10 @@ def main():
     cursor.execute("SET work_mem = '1GB'")
 
     cursor.execute("SELECT id FROM patient ORDER BY id")
-    patient_ids = cursor.fetchall()[93:]
+    patient_ids = cursor.fetchall()
 
     for patient_id in patient_ids:
         patient_id = patient_id[0]
-        patient_id = "H014"
         e4_timestamps = conn.get_all_timestamps_from_patient_id(patient_id)
         relax_timestamps = conn.get_all_relax_sessions_from_patient_id(patient_id)
 

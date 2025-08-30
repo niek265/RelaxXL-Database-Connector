@@ -103,12 +103,51 @@ def calculate_weekly_stats(week_measurement_list):
             # Get all sessions for this measurement
             cursor.execute("SELECT id FROM measure_session WHERE measurement_id = %s order by start_timestamp",
                            (measurement_id,))
+            eda_data_count = 0
+            eda_invalid_count = 0
             sessions = cursor.fetchall()
             all_eda_data = []
             for session_id in sessions:
                 data = conn.get_valid_data_from_measure_session(session_id)
-                for value in data.values():
-                    all_eda_data.extend(value)
+                for ts, values in data.items():
+
+                    if np.all(values == 0) or len(values) < 100:
+                        continue
+
+
+                    nk_data = np.array(values).ravel()
+
+                    # Filter the data
+                    new_nk_data = nk.eda_clean(nk_data, sampling_rate=8, method="neurokit")
+
+                    if np.all(new_nk_data == 0.0):
+                        continue
+
+
+
+
+                    signals, info = nk.eda_process(new_nk_data, sampling_rate=8)
+
+                    scl = signals["EDA_Tonic"]
+                    amplitudes = info["SCR_Amplitude"]
+
+                    # If the average SCL is above 0.2 or the average amplitude is above 0.03 we consider the data valid
+                    if np.mean(scl) > 0.2 or np.mean(amplitudes) > 0.03:
+                        eda_data_count += len(nk_data)
+                        for value in data.values():
+                            all_eda_data.extend(value)
+                    else:
+                        eda_invalid_count += len(nk_data)
+
+            if len(all_eda_data) == 0:
+                print(f"No valid EDA data found for measurement {measurement_id}. Skipping EDA statistics.")
+                continue
+
+            filtered_nk_data = nk.eda_clean(all_eda_data, sampling_rate=8, method="neurokit")
+            signals, info = nk.eda_process(filtered_nk_data, sampling_rate=8)
+
+            all_scl = signals["EDA_Tonic"]
+            all_amplitudes = info["SCR_Amplitude"]
 
             # Calculate the average EDA
             week_stats.eda_sd = np.std(all_eda_data)
@@ -120,33 +159,32 @@ def calculate_weekly_stats(week_measurement_list):
             week_stats.eda_3q = np.percentile(all_eda_data, 75)
             week_stats.eda_iqr = week_stats.eda_3q - week_stats.eda_1q
 
-            nk_data = np.array(all_eda_data).ravel()
-
-            signals, info = nk.eda_process(nk_data, sampling_rate=4)
-
-            scl = signals["EDA_Tonic"]
-            week_stats.eda_scl_sd = np.std(scl)
-            week_stats.eda_scl_mean = np.mean(scl)
-            week_stats.eda_scl_median = np.median(scl)
-            week_stats.eda_scl_min = np.min(scl)
-            week_stats.eda_scl_max = np.max(scl)
+            week_stats.eda_scl_sd = np.std(all_scl)
+            week_stats.eda_scl_mean = np.mean(all_scl)
+            week_stats.eda_scl_median = np.median(all_scl)
+            week_stats.eda_scl_min = np.min(all_scl)
+            week_stats.eda_scl_max = np.max(all_scl)
             week_stats.eda_scl_range = week_stats.eda_scl_max - week_stats.eda_scl_min
-            week_stats.eda_scl_1q = np.percentile(scl, 25)
-            week_stats.eda_scl_3q = np.percentile(scl, 75)
+            week_stats.eda_scl_1q = np.percentile(all_scl, 25)
+            week_stats.eda_scl_3q = np.percentile(all_scl, 75)
             week_stats.eda_scl_iqr = week_stats.eda_scl_3q - week_stats.eda_scl_1q
 
             week_stats.eda_scr_peaks = len(np.where(signals["SCR_Peaks"])[0])
 
-            amplitudes = info["SCR_Amplitude"]
-            week_stats.eda_scr_amplitude_sd = np.std(amplitudes)
-            week_stats.eda_scr_amplitude_mean = np.mean(amplitudes)
-            week_stats.eda_scr_amplitude_median = np.median(amplitudes)
-            week_stats.eda_scr_amplitude_min = np.min(amplitudes)
-            week_stats.eda_scr_amplitude_max = np.max(amplitudes)
+            week_stats.eda_scr_amplitude_sd = np.std(all_amplitudes)
+            week_stats.eda_scr_amplitude_mean = np.mean(all_amplitudes)
+            week_stats.eda_scr_amplitude_median = np.median(all_amplitudes)
+            week_stats.eda_scr_amplitude_min = np.min(all_amplitudes)
+            week_stats.eda_scr_amplitude_max = np.max(all_amplitudes)
             week_stats.eda_scr_amplitude_range = week_stats.eda_scr_amplitude_max - week_stats.eda_scr_amplitude_min
-            week_stats.eda_scr_amplitude_1q = np.percentile(amplitudes, 25)
-            week_stats.eda_scr_amplitude_3q = np.percentile(amplitudes, 75)
+            week_stats.eda_scr_amplitude_1q = np.percentile(all_amplitudes, 25)
+            week_stats.eda_scr_amplitude_3q = np.percentile(all_amplitudes, 75)
             week_stats.eda_scr_amplitude_iqr = week_stats.eda_scr_amplitude_3q - week_stats.eda_scr_amplitude_1q
+            # Calculate the percentage of valid EDA data
+            if eda_data_count > 0 and eda_invalid_count > 0:
+                week_stats.eda_valid_percentage = (eda_data_count / (eda_data_count + eda_invalid_count)) * 100
+            else:
+                week_stats.eda_valid_percentage = 100
 
         elif measurement_type == 'BVP':
             # Get all sessions for this measurement
@@ -294,6 +332,7 @@ class WeekStats:
         self.eda_scr_amplitude_1q = None
         self.eda_scr_amplitude_3q = None
         self.eda_scr_amplitude_iqr = None
+        self.eda_valid_percentage = None
 
         self.bvp_sd = None
         self.bvp_mean = None
@@ -522,6 +561,8 @@ def main():
                 "EDA_scl_3q_week1": week1_stats.eda_scl_3q,
                 "EDA_scl_iqr_week1": week1_stats.eda_scl_iqr,
                 "EDA_scr_peaks_week1": week1_stats.eda_scr_peaks,
+                "EDA_scr_peaks_per_minute_week1": week1_stats.eda_scr_peaks / (
+                    (week1_end - week1_start).total_seconds() / 60) if (week1_end - week1_start).total_seconds() > 0 else 0,
                 "EDA_scr_amplitude_sd_week1": week1_stats.eda_scr_amplitude_sd,
                 "EDA_scr_amplitude_mean_week1": week1_stats.eda_scr_amplitude_mean,
                 "EDA_scr_amplitude_median_week1": week1_stats.eda_scr_amplitude_median,
@@ -531,6 +572,7 @@ def main():
                 "EDA_scr_amplitude_1q_week1": week1_stats.eda_scr_amplitude_1q,
                 "EDA_scr_amplitude_3q_week1": week1_stats.eda_scr_amplitude_3q,
                 "EDA_scr_amplitude_iqr_week1": week1_stats.eda_scr_amplitude_iqr,
+                "EDA_valid_percentage_week1": week1_stats.eda_valid_percentage,
                 "EDA_sd_week2": week2_stats.eda_sd,
                 "EDA_mean_week2": week2_stats.eda_mean,
                 "EDA_min_week2": week2_stats.eda_min,
@@ -549,6 +591,8 @@ def main():
                 "EDA_scl_3q_week2": week2_stats.eda_scl_3q,
                 "EDA_scl_iqr_week2": week2_stats.eda_scl_iqr,
                 "EDA_scr_peaks_week2": week2_stats.eda_scr_peaks,
+                "EDA_scr_peaks_per_minute_week2": week2_stats.eda_scr_peaks / (
+                    (week2_end - week2_start).total_seconds() / 60) if (week2_end - week2_start).total_seconds() > 0 and week2_stats.eda_scr_peaks else 0,
                 "EDA_scr_amplitude_sd_week2": week2_stats.eda_scr_amplitude_sd,
                 "EDA_scr_amplitude_mean_week2": week2_stats.eda_scr_amplitude_mean,
                 "EDA_scr_amplitude_median_week2": week2_stats.eda_scr_amplitude_median,
@@ -557,7 +601,8 @@ def main():
                 "EDA_scr_amplitude_range_week2": week2_stats.eda_scr_amplitude_range,
                 "EDA_scr_amplitude_1q_week2": week2_stats.eda_scr_amplitude_1q,
                 "EDA_scr_amplitude_3q_week2": week2_stats.eda_scr_amplitude_3q,
-                "EDA_scr_amplitude_iqr_week2": week2_stats.eda_scr_amplitude_iqr
+                "EDA_scr_amplitude_iqr_week2": week2_stats.eda_scr_amplitude_iqr,
+                "EDA_valid_percentage_week2": week2_stats.eda_valid_percentage
             }
 
             # # Add the HRV stats to the stats dictionary
